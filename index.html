@@ -516,6 +516,12 @@
 
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
+        modal.onclick = function(event) {
+          if (event.target === modal) {
+            modal.remove();
+          }
+        };
+
         modal.innerHTML = `
           <div class="modal">
             <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
