@@ -333,9 +333,23 @@
         document.body.appendChild(modal);
       }
 
-      function requestClaim(taskId) {
-        alert('Claim request flow will be connected in the next step. Task #' + taskId);
-      }
+function requestClaim(taskId) {
+  const task = TASKS.find(t => String(t.task_id) === String(taskId));
+
+  if (!task) {
+    alert('Could not find task #' + taskId);
+    return;
+  }
+
+  const repoUrl = 'https://github.com/snorkel-ai/otter-harbor-claims/issues/new';
+  const params = new URLSearchParams({
+    template: 'claim_request.yml',
+    title: `[Claim Request] Task #${task.task_id}`,
+    labels: 'claim-request'
+  });
+
+  window.open(`${repoUrl}?${params.toString()}`, '_blank');
+}
 
       function escapeHtml(value) {
         return String(value ?? '')
