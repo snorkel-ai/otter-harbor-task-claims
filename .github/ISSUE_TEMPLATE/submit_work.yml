@@ -1,0 +1,45 @@
+name: Submit work
+description: Submit completed work for an Otter Harbor task
+title: "[Submission] Task #"
+labels:
+  - submission
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submit your completed Otter Harbor task here. An admin will review it.
+
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      description: Enter the task number you completed.
+      placeholder: "1"
+    validations:
+      required: true
+
+  - type: input
+    id: task_title
+    attributes:
+      label: Task title
+      description: Copy the task title from the dashboard.
+      placeholder: "RobustAD: Real-World Robustness in Industrial Anomaly Detection"
+    validations:
+      required: true
+
+  - type: input
+    id: contributor_email
+    attributes:
+      label: Your email
+      placeholder: "you@example.com"
+    validations:
+      required: true
+
+  - type: input
+    id: snorkel_submission_id
+    attributes:
+      label: Snorkel Submission ID
+      description: Paste the Snorkel Submission ID for your completed work.
+      placeholder: "sub_..."
+    validations:
+      required: true
