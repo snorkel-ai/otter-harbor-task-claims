@@ -7,23 +7,245 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        margin: 40px;
+        margin: 0;
         color: #202124;
+        background: #f8fafd;
+      }
+
+      header {
+        background: #ffffff;
+        border-bottom: 1px solid #dadce0;
+        padding: 24px;
+      }
+
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
       }
 
       h1 {
-        font-size: 40px;
+        margin: 0 0 8px;
+        font-size: 36px;
+      }
+
+      .muted {
+        color: #5f6368;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      input,
+      select {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #dadce0;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      .stat,
+      .task {
+        background: #ffffff;
+        border: 1px solid #dadce0;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 28px;
+      }
+
+      .task {
+        margin-bottom: 12px;
+      }
+
+      .task-title {
+        font-size: 18px;
+        font-weight: bold;
         margin-bottom: 8px;
       }
 
-      p {
-        color: #5f6368;
-        font-size: 18px;
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        margin: 4px 6px 4px 0;
+        background: #eeeeee;
+      }
+
+      .Available {
+        background: #e6f4ea;
+      }
+
+      .Claimed {
+        background: #fef7e0;
+      }
+
+      .Submitted {
+        background: #e8f0fe;
+      }
+
+      .Approved {
+        background: #d9ead3;
+      }
+
+      .Blocked {
+        background: #fce8e6;
+      }
+
+      a.button {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: #1a73e8;
+        color: #ffffff;
+        text-decoration: none;
+      }
+
+      @media (max-width: 700px) {
+        .controls,
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 28px;
+        }
       }
     </style>
   </head>
+
   <body>
-    <h1>Otter Harbor Claims</h1>
-    <p>The Harbor task dashboard is live.</p>
+    <header>
+      <h1>Otter Harbor Claims</h1>
+      <div class="muted">Browse Harbor tasks and request a claim.</div>
+    </header>
+
+    <main>
+      <div class="controls">
+        <input id="search" placeholder="Search title, domain, venue..." oninput="render()">
+        <select id="statusFilter" onchange="render()">
+          <option value="Available">Available</option>
+          <option value="Claimed">Claimed</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Approved">Approved</option>
+          <option value="Blocked">Blocked</option>
+          <option value="All">All</option>
+        </select>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div id="taskList">Loading tasks...</div>
+    </main>
+
+    <script>
+      let TASKS = [];
+
+      async function loadTasks() {
+        const response = await fetch('tasks.json', { cache: 'no-store' });
+        TASKS = await response.json();
+        render();
+      }
+
+      function render() {
+        renderStats();
+        renderTaskList();
+      }
+
+      function renderStats() {
+        const counts = {
+          available: TASKS.filter(t => t.status === 'Available').length,
+          claimed: TASKS.filter(t => t.status === 'Claimed').length,
+          submitted: TASKS.filter(t => t.status === 'Submitted').length,
+          approved: TASKS.filter(t => t.status === 'Approved').length
+        };
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat"><strong>${counts.available}</strong><span>Available</span></div>
+          <div class="stat"><strong>${counts.claimed}</strong><span>Claimed</span></div>
+          <div class="stat"><strong>${counts.submitted}</strong><span>Submitted</span></div>
+          <div class="stat"><strong>${counts.approved}</strong><span>Approved</span></div>
+        `;
+      }
+
+      function renderTaskList() {
+        const q = document.getElementById('search').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+
+        const tasks = TASKS.filter(task => {
+          const blob = [
+            task.task_id,
+            task.domain,
+            task.subdomain,
+            task.paper_title,
+            task.venue_year,
+            task.priority
+          ].join(' ').toLowerCase();
+
+          const matchesText = !q || blob.includes(q);
+          const matchesStatus = status === 'All' || task.status === status;
+
+          return matchesText && matchesStatus;
+        });
+
+        const taskList = document.getElementById('taskList');
+
+        if (!tasks.length) {
+          taskList.innerHTML = '<p class="muted">No matching tasks.</p>';
+          return;
+        }
+
+        taskList.innerHTML = tasks.map(task => `
+          <div class="task">
+            <div class="task-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+            <div>
+              <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
+              <span class="pill">${escapeHtml(task.domain || '')}</span>
+              <span class="pill">${escapeHtml(task.venue_year || '')}</span>
+              <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
+            </div>
+            <div class="muted">${escapeHtml(task.subdomain || '')}</div>
+            ${task.paper_url ? `<a class="button" href="${escapeAttr(task.paper_url)}" target="_blank">Open paper</a>` : ''}
+            ${task.status === 'Available' ? `<a class="button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Request claim</a>` : ''}
+          </div>
+        `).join('');
+      }
+
+      function requestClaim(taskId) {
+        alert('Claim request flow will be connected in the next step. Task #' + taskId);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, '&#096;');
+      }
+
+      loadTasks();
+    </script>
   </body>
 </html>
