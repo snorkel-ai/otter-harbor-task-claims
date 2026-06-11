@@ -1,0 +1,36 @@
+name: Claim request
+description: Request to claim an Otter Harbor task
+title: "[Claim Request] Task #"
+labels:
+  - claim-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for requesting an Otter Harbor task. An admin will confirm the claim and update the task status.
+
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      description: Enter the task number you want to claim.
+      placeholder: "1"
+    validations:
+      required: true
+
+  - type: input
+    id: task_title
+    attributes:
+      label: Task title
+      description: Copy the task title from the dashboard.
+      placeholder: "RobustAD: Real-World Robustness in Industrial Anomaly Detection"
+    validations:
+      required: true
+
+  - type: input
+    id: contributor_email
+    attributes:
+      label: Your email
+      placeholder: "you@example.com"
+    validations:
+      required: true
