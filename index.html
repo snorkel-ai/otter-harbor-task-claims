@@ -112,6 +112,7 @@
       a.button {
         display: inline-block;
         margin-top: 10px;
+        margin-right: 8px;
         padding: 9px 12px;
         border-radius: 8px;
         background: #1a73e8;
@@ -120,57 +121,58 @@
       }
 
       .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(32, 33, 36, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 1000;
-}
+        position: fixed;
+        inset: 0;
+        background: rgba(32, 33, 36, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 1000;
+      }
 
-.modal {
-  position: relative;
-  width: min(900px, 100%);
-  max-height: 85vh;
-  overflow: auto;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-}
+      .modal {
+        position: relative;
+        width: min(900px, 100%);
+        max-height: 85vh;
+        overflow: auto;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      }
 
-.modal h2 {
-  margin-top: 0;
-}
+      .modal h2 {
+        margin-top: 0;
+        padding-right: 40px;
+      }
 
-.modal h3 {
-  margin-bottom: 6px;
-}
+      .modal h3 {
+        margin-bottom: 6px;
+      }
 
-.modal pre {
-  white-space: pre-wrap;
-  font-family: Arial, sans-serif;
-  background: #f8fafd;
-  border: 1px solid #dadce0;
-  border-radius: 10px;
-  padding: 12px;
-}
+      .modal pre {
+        white-space: pre-wrap;
+        font-family: Arial, sans-serif;
+        background: #f8fafd;
+        border: 1px solid #dadce0;
+        border-radius: 10px;
+        padding: 12px;
+      }
 
-.modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  border: 0;
-  border-radius: 999px;
-  width: 32px;
-  height: 32px;
-  background: #eeeeee;
-  cursor: pointer;
-  font-size: 20px;
-}
-      
+      .modal-close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        border: 0;
+        border-radius: 999px;
+        width: 32px;
+        height: 32px;
+        background: #eeeeee;
+        cursor: pointer;
+        font-size: 20px;
+      }
+
       @media (max-width: 700px) {
         .controls,
         .stats {
@@ -248,7 +250,8 @@
             task.subdomain,
             task.paper_title,
             task.venue_year,
-            task.priority
+            task.priority,
+            task.task_concept
           ].join(' ').toLowerCase();
 
           const matchesText = !q || blob.includes(q);
@@ -263,70 +266,71 @@
           taskList.innerHTML = '<p class="muted">No matching tasks.</p>';
           return;
         }
-function openTaskDetails(taskId) {
-  const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
-  if (!task) {
-    alert('Could not find task #' + taskId);
-    return;
-  }
+        taskList.innerHTML = tasks.map(task => `
+          <div class="task">
+            <div class="task-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
 
-  const sourcesHtml = task.sources && task.sources.length
-    ? task.sources.map((source, index) => `
-        <a class="button" href="${escapeAttr(source)}" target="_blank">Source ${index + 1}</a>
-      `).join('')
-    : '<p class="muted">No sources listed.</p>';
+            <div>
+              <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
+              <span class="pill">${escapeHtml(task.domain || '')}</span>
+              <span class="pill">${escapeHtml(task.venue_year || '')}</span>
+              <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
+            </div>
 
-  const modal = document.createElement('div');
-  modal.className = 'modal-backdrop';
-  modal.innerHTML = `
-    <div class="modal">
-      <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
+            <div class="muted">${escapeHtml(task.subdomain || '')}</div>
 
-      <h2>#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</h2>
+            <a class="button" href="#" onclick="openTaskDetails('${escapeAttr(String(task.task_id))}'); return false;">View details</a>
 
-      <div>
-        <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
-        <span class="pill">${escapeHtml(task.domain || '')}</span>
-        <span class="pill">${escapeHtml(task.venue_year || '')}</span>
-        <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
-      </div>
+            ${task.status === 'Available' ? `<a class="button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Request claim</a>` : ''}
+          </div>
+        `).join('');
+      }
 
-      <h3>Task concept</h3>
-      <p>${escapeHtml(task.task_concept || 'No task concept listed.')}</p>
+      function openTaskDetails(taskId) {
+        const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
-      <h3>Suggested Harbor steps</h3>
-      <pre>${escapeHtml(task.suggested_harbor_steps || 'No suggested steps listed.')}</pre>
+        if (!task) {
+          alert('Could not find task #' + taskId);
+          return;
+        }
 
-      <h3>Verifier ideas</h3>
-      <p>${escapeHtml(task.verifier_ideas || 'No verifier ideas listed.')}</p>
+        const sourcesHtml = task.sources && task.sources.length
+          ? task.sources.map((source, index) => `
+              <a class="button" href="${escapeAttr(source)}" target="_blank">Source ${index + 1}</a>
+            `).join('')
+          : '<p class="muted">No sources listed.</p>';
 
-      <h3>Sources</h3>
-      <div>${sourcesHtml}</div>
-    </div>
-  `;
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+          <div class="modal">
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
 
-  document.body.appendChild(modal);
-}
-        
-taskList.innerHTML = tasks.map(task => `
-  <div class="task">
-    <div class="task-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+            <h2>#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</h2>
 
-    <div>
-      <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
-      <span class="pill">${escapeHtml(task.domain || '')}</span>
-      <span class="pill">${escapeHtml(task.venue_year || '')}</span>
-      <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
-    </div>
+            <div>
+              <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
+              <span class="pill">${escapeHtml(task.domain || '')}</span>
+              <span class="pill">${escapeHtml(task.venue_year || '')}</span>
+              <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
+            </div>
 
-    <div class="muted">${escapeHtml(task.subdomain || '')}</div>
+            <h3>Task concept</h3>
+            <p>${escapeHtml(task.task_concept || 'No task concept listed.')}</p>
 
-    <a class="button" href="#" onclick="openTaskDetails('${escapeAttr(String(task.task_id))}'); return false;">View details</a>
+            <h3>Suggested Harbor steps</h3>
+            <pre>${escapeHtml(task.suggested_harbor_steps || 'No suggested steps listed.')}</pre>
 
-    ${task.status === 'Available' ? `<a class="button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Request claim</a>` : ''}
-  </div>
-`).join('');
+            <h3>Verifier ideas</h3>
+            <p>${escapeHtml(task.verifier_ideas || 'No verifier ideas listed.')}</p>
+
+            <h3>Sources</h3>
+            <div>${sourcesHtml}</div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
       }
 
       function requestClaim(taskId) {
