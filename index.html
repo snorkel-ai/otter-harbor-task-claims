@@ -212,20 +212,48 @@
           return;
         }
 
-        taskList.innerHTML = tasks.map(task => `
-          <div class="task">
-            <div class="task-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
-            <div>
-              <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
-              <span class="pill">${escapeHtml(task.domain || '')}</span>
-              <span class="pill">${escapeHtml(task.venue_year || '')}</span>
-              <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
-            </div>
-            <div class="muted">${escapeHtml(task.subdomain || '')}</div>
-            ${task.paper_url ? `<a class="button" href="${escapeAttr(task.paper_url)}" target="_blank">Open paper</a>` : ''}
-            ${task.status === 'Available' ? `<a class="button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Request claim</a>` : ''}
-          </div>
-        `).join('');
+taskList.innerHTML = tasks.map(task => `
+  <div class="task">
+    <div class="task-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+
+    <div>
+      <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
+      <span class="pill">${escapeHtml(task.domain || '')}</span>
+      <span class="pill">${escapeHtml(task.venue_year || '')}</span>
+      <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
+    </div>
+
+    <div class="muted">${escapeHtml(task.subdomain || '')}</div>
+
+    ${task.task_concept ? `
+      <p>${escapeHtml(task.task_concept)}</p>
+    ` : ''}
+
+    ${task.suggested_harbor_steps ? `
+      <details>
+        <summary>Suggested Harbor steps</summary>
+        <pre>${escapeHtml(task.suggested_harbor_steps)}</pre>
+      </details>
+    ` : ''}
+
+    ${task.verifier_ideas ? `
+      <details>
+        <summary>Verifier ideas</summary>
+        <p>${escapeHtml(task.verifier_ideas)}</p>
+      </details>
+    ` : ''}
+
+    ${task.sources && task.sources.length ? `
+      <div>
+        ${task.sources.map((source, index) => `
+          <a class="button" href="${escapeAttr(source)}" target="_blank">Source ${index + 1}</a>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${task.status === 'Available' ? `<a class="button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Request claim</a>` : ''}
+  </div>
+`).join('');
       }
 
       function requestClaim(taskId) {
