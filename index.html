@@ -620,9 +620,37 @@ async function signInWithGitHub() {
         document.body.appendChild(modal);
       }
 
-      async function requestClaim(taskId) {
-        alert("Supabase task loading is live. Claiming is the next step to wire up.");
-      }
+async function requestClaim(taskId) {
+  const task = TASKS.find(t => String(t.task_id) === String(taskId));
+
+  if (!task) {
+    alert("Could not find task #" + taskId);
+    return;
+  }
+
+  if (!currentUser) {
+    await signInWithGitHub();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("harbor_selected_tasks")
+    .insert({
+      task_id: task.id,
+      user_id: currentUser.id,
+      user_email: currentUser.email || null,
+      status: "claimed"
+    });
+
+  if (error) {
+    console.error(error);
+    alert("Could not claim this task. It may already be claimed, or your session may need to refresh.");
+    return;
+  }
+
+  alert("Task claimed.");
+  await loadTasks();
+}
 
       function shorten(value, maxLength) {
         const text = String(value || "");
