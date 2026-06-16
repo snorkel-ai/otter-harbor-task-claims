@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Otter Harbor Claims</title>
+
     <style>
       :root {
         --bg: #f6f7fb;
@@ -239,9 +240,11 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        border: 0;
         border-radius: 12px;
         padding: 11px 14px;
         font-weight: 800;
+        font-size: 15px;
         text-decoration: none;
         cursor: pointer;
       }
@@ -376,6 +379,7 @@
         }
       }
     </style>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 
@@ -391,6 +395,7 @@
           <span class="label">Where</span>
           <input id="search" placeholder="Search tasks... e.g. by domain" oninput="render()">
         </div>
+
         <div class="filter-part">
           <span class="label">Status</span>
           <select id="statusFilter" onchange="render()">
@@ -415,33 +420,33 @@
     </main>
 
     <script>
-let TASKS = [];
+      let TASKS = [];
 
-const SUPABASE_URL = "https://mgvckvbwwbbnifjxkfzk.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
+      const SUPABASE_URL = "https://mgvckvbwwbbnifjxkfzk.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function loadTasks() {
-  const { data, error } = await supabaseClient
-    .from("harbor_tasks")
-    .select("*")
-    .order("display_id", { ascending: true });
+      async function loadTasks() {
+        const { data, error } = await supabaseClient
+          .from("harbor_tasks")
+          .select("*")
+          .order("display_id", { ascending: true });
 
-  if (error) {
-    console.error(error);
-    alert("Could not load tasks from Supabase. Check the browser console.");
-    return;
-  }
+        if (error) {
+          console.error(error);
+          alert("Could not load tasks from Supabase. Check the browser console.");
+          return;
+        }
 
-  TASKS = data.map(task => ({
-    ...task,
-    task_id: task.display_id,
-    status: "Available"
-  }));
+        TASKS = data.map(task => ({
+          ...task,
+          task_id: task.display_id,
+          status: "Available"
+        }));
 
-  render();
-}
+        render();
+      }
 
       function render() {
         renderStats();
@@ -450,13 +455,13 @@ async function loadTasks() {
 
       function renderStats() {
         const counts = {
-          available: TASKS.filter(t => t.status === 'Available').length,
-          claimed: TASKS.filter(t => t.status === 'Claimed').length,
-          submitted: TASKS.filter(t => t.status === 'Submitted').length,
-          approved: TASKS.filter(t => t.status === 'Approved').length
+          available: TASKS.filter(t => t.status === "Available").length,
+          claimed: TASKS.filter(t => t.status === "Claimed").length,
+          submitted: TASKS.filter(t => t.status === "Submitted").length,
+          approved: TASKS.filter(t => t.status === "Approved").length
         };
 
-        document.getElementById('stats').innerHTML = `
+        document.getElementById("stats").innerHTML = `
           <div>${counts.available} Available</div>
           <div>${counts.claimed} Claimed</div>
           <div>${counts.submitted} Submitted</div>
@@ -465,8 +470,8 @@ async function loadTasks() {
       }
 
       function renderTaskList() {
-        const q = document.getElementById('search').value.toLowerCase();
-        const status = document.getElementById('statusFilter').value;
+        const q = document.getElementById("search").value.toLowerCase();
+        const status = document.getElementById("statusFilter").value;
 
         const tasks = TASKS.filter(task => {
           const blob = [
@@ -477,19 +482,19 @@ async function loadTasks() {
             task.venue_year,
             task.priority,
             task.task_concept
-          ].join(' ').toLowerCase();
+          ].join(" ").toLowerCase();
 
           const matchesText = !q || blob.includes(q);
-          const matchesStatus = status === 'All' || task.status === status;
+          const matchesStatus = status === "All" || task.status === status;
 
           return matchesText && matchesStatus;
         });
 
-        document.getElementById('visibleCount').textContent = tasks.length;
-        document.getElementById('sectionTitle').textContent =
-          status === 'All' ? 'All Harbor Tasks' : `${status} Harbor Tasks`;
+        document.getElementById("visibleCount").textContent = tasks.length;
+        document.getElementById("sectionTitle").textContent =
+          status === "All" ? "All Harbor Tasks" : `${status} Harbor Tasks`;
 
-        const taskList = document.getElementById('taskList');
+        const taskList = document.getElementById("taskList");
 
         if (!tasks.length) {
           taskList.innerHTML = '<div class="empty">No matching tasks.</div>';
@@ -502,21 +507,21 @@ async function loadTasks() {
               <article class="task">
                 <div class="eyebrow">
                   <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
-                  <span class="pill">${escapeHtml(task.domain || '')}</span>
-                  <span class="pill">${escapeHtml(task.subdomain || '')}</span>
+                  <span class="pill">${escapeHtml(task.domain || "")}</span>
+                  <span class="pill">${escapeHtml(task.subdomain || "")}</span>
                 </div>
 
                 <h3 class="task-title">${escapeHtml(task.paper_title)}</h3>
-                <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || '')}</p>
+                <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || "")}</p>
 
-                <p class="preview">${escapeHtml(shorten(task.task_concept || '', 210))}</p>
+                <p class="preview">${escapeHtml(shorten(task.task_concept || "", 210))}</p>
 
                 <div class="task-footer">
                   <a class="link-button" href="#" onclick="openTaskDetails('${escapeAttr(String(task.task_id))}'); return false;">View details</a>
-                  ${task.status === 'Available' ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ''}
+                  ${task.status === "Available" ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ""}
                 </div>
               </article>
-            `).join('')}
+            `).join("")}
           </div>
         `;
       }
@@ -525,18 +530,19 @@ async function loadTasks() {
         const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
         if (!task) {
-          alert('Could not find task #' + taskId);
+          alert("Could not find task #" + taskId);
           return;
         }
 
-        const sourcesHtml = task.sources && task.sources.length
+        const sourcesHtml = Array.isArray(task.sources) && task.sources.length
           ? task.sources.map((source, index) => `
-              <a class="primary-button" href="${escapeAttr(source)}" target="_blank">Source ${index + 1}</a>
-            `).join('')
-          : '<p>No sources listed.</p>';
+              <a class="primary-button" href="${escapeAttr(source)}" target="_blank" rel="noopener noreferrer">Source ${index + 1}</a>
+            `).join("")
+          : "<p>No sources listed.</p>";
 
-        const modal = document.createElement('div');
-        modal.className = 'modal-backdrop';
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+
         modal.onclick = function(event) {
           if (event.target === modal) {
             modal.remove();
@@ -548,30 +554,30 @@ async function loadTasks() {
             <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
 
             <div class="eyebrow">
-              <span class="pill">${escapeHtml(task.domain || '')}</span>
-              <span class="pill">${escapeHtml(task.subdomain || '')}</span>
+              <span class="pill">${escapeHtml(task.domain || "")}</span>
+              <span class="pill">${escapeHtml(task.subdomain || "")}</span>
             </div>
 
             <h2>${escapeHtml(task.paper_title)}</h2>
-            <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || '')}</p>
+            <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || "")}</p>
 
             <div class="eyebrow">
               <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
-              <span class="pill">Priority: ${escapeHtml(task.priority || '')}</span>
+              <span class="pill">Priority: ${escapeHtml(task.priority || "")}</span>
             </div>
 
             <div class="modal-section">
-              <p>${escapeHtml(task.task_concept || 'No task concept listed.')}</p>
+              <p>${escapeHtml(task.task_concept || "No task concept listed.")}</p>
             </div>
 
             <div class="modal-section">
               <h3>Suggested Harbor Steps</h3>
-              <pre>${escapeHtml(task.suggested_harbor_steps || 'No suggested steps listed.')}</pre>
+              <pre>${escapeHtml(task.suggested_harbor_steps || "No suggested steps listed.")}</pre>
             </div>
 
             <div class="modal-section">
               <h3>Verifier Ideas</h3>
-              <p>${escapeHtml(task.verifier_ideas || 'No verifier ideas listed.')}</p>
+              <p>${escapeHtml(task.verifier_ideas || "No verifier ideas listed.")}</p>
             </div>
 
             <div class="modal-section">
@@ -581,7 +587,7 @@ async function loadTasks() {
 
             <div class="modal-footer">
               <a class="link-button" href="#" onclick="this.closest('.modal-backdrop').remove(); return false;">Cancel</a>
-              ${task.status === 'Available' ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ''}
+              ${task.status === "Available" ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ""}
             </div>
           </div>
         `;
@@ -589,41 +595,27 @@ async function loadTasks() {
         document.body.appendChild(modal);
       }
 
-      function requestClaim(taskId) {
-        const task = TASKS.find(t => String(t.task_id) === String(taskId));
-
-        if (!task) {
-          alert('Could not find task #' + taskId);
-          return;
-        }
-
-        const repoUrl = 'https://github.com/snorkel-ai/otter-harbor-claims/issues/new';
-        const params = new URLSearchParams({
-          template: 'claim_request.yml',
-          title: `[Claim Request] Task #${task.task_id}`,
-          labels: 'claim-request'
-        });
-
-        window.open(`${repoUrl}?${params.toString()}`, '_blank');
+      async function requestClaim(taskId) {
+        alert("Supabase task loading is live. Claiming is the next step to wire up.");
       }
 
       function shorten(value, maxLength) {
-        const text = String(value || '');
+        const text = String(value || "");
         if (text.length <= maxLength) return text;
-        return text.slice(0, maxLength).trim() + '...';
+        return text.slice(0, maxLength).trim() + "...";
       }
 
       function escapeHtml(value) {
-        return String(value ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
       }
 
       function escapeAttr(value) {
-        return escapeHtml(value).replace(/`/g, '&#096;');
+        return escapeHtml(value).replace(/`/g, "&#096;");
       }
 
       loadTasks();
