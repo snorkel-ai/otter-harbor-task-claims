@@ -171,11 +171,20 @@
         font-size: 18px;
       }
 
-      .panel input {
+      .panel input,
+      .modal input,
+      .modal textarea {
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 12px 14px;
         background: #fff;
+      }
+
+      .modal textarea {
+        width: 100%;
+        min-height: 110px;
+        resize: vertical;
+        font: inherit;
       }
 
       input::placeholder {
@@ -885,6 +894,7 @@
           <h2>Admin tools</h2>
           <p>Use these tools carefully. Clear expired claims only affects claims past the 24-hour window.</p>
           <div class="panel-actions">
+            <button class="primary-button" onclick="openAddTaskModal()">Add task</button>
             <button class="warning-button" onclick="clearExpiredClaims()">Clear expired claims</button>
           </div>
 
@@ -1317,6 +1327,164 @@
 
         const count = Number(data || 0);
         showMessage(`${count} expired claim(s) cleared.`);
+        await loadTasks();
+      }
+
+
+      function openAddTaskModal() {
+        if (!isAdmin()) {
+          showError("You do not have permission to add tasks.");
+          return;
+        }
+
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+
+        modal.onclick = function(event) {
+          if (event.target === modal) {
+            modal.remove();
+          }
+        };
+
+        modal.innerHTML = `
+          <div class="modal">
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
+
+            <h2>Add task</h2>
+            <p class="muted">This adds or updates one Harbor task by Display ID. It does not touch claims, submissions, or approvals.</p>
+
+            <div class="modal-section">
+              <h3>Display ID</h3>
+              <input id="newTaskDisplayId" placeholder="51">
+            </div>
+
+            <div class="modal-section">
+              <h3>Priority</h3>
+              <input id="newTaskPriority" placeholder="Candidate">
+            </div>
+
+            <div class="modal-section">
+              <h3>Domain</h3>
+              <input id="newTaskDomain" placeholder="CV, Graph, Tabular ML, Multimodal">
+            </div>
+
+            <div class="modal-section">
+              <h3>Subdomain</h3>
+              <input id="newTaskSubdomain" placeholder="Anomaly Detection">
+            </div>
+
+            <div class="modal-section">
+              <h3>Paper title</h3>
+              <input id="newTaskPaperTitle" placeholder="Paper title">
+            </div>
+
+            <div class="modal-section">
+              <h3>Venue / year</h3>
+              <input id="newTaskVenueYear" placeholder="CVPR 2026">
+            </div>
+
+            <div class="modal-section">
+              <h3>Sources</h3>
+              <textarea id="newTaskSources" placeholder="One URL per line"></textarea>
+            </div>
+
+            <div class="modal-section">
+              <h3>Task concept</h3>
+              <textarea id="newTaskConcept" placeholder="Build a system that..."></textarea>
+            </div>
+
+            <div class="modal-section">
+              <h3>Suggested Harbor steps</h3>
+              <textarea id="newTaskSteps" placeholder="1. data-and-setup: ...&#10;2. model-development: ...&#10;3. evaluation-and-reporting: ..."></textarea>
+            </div>
+
+            <div class="modal-section">
+              <h3>Verifier ideas</h3>
+              <textarea id="newTaskVerifierIdeas" placeholder="Training works; Metrics computed; Report written"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <a class="link-button" href="#" onclick="this.closest('.modal-backdrop').remove(); return false;">Cancel</a>
+              <button class="primary-button" onclick="submitNewTask()">Add task</button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+      }
+
+      async function submitNewTask() {
+        clearMessage();
+        clearError();
+
+        if (!isAdmin()) {
+          showError("You do not have permission to add tasks.");
+          return;
+        }
+
+        const displayId = String(document.getElementById("newTaskDisplayId")?.value || "").trim();
+        const priority = String(document.getElementById("newTaskPriority")?.value || "").trim();
+        const domain = String(document.getElementById("newTaskDomain")?.value || "").trim();
+        const subdomain = String(document.getElementById("newTaskSubdomain")?.value || "").trim();
+        const paperTitle = String(document.getElementById("newTaskPaperTitle")?.value || "").trim();
+        const venueYear = String(document.getElementById("newTaskVenueYear")?.value || "").trim();
+        const sourcesText = String(document.getElementById("newTaskSources")?.value || "").trim();
+        const taskConcept = String(document.getElementById("newTaskConcept")?.value || "").trim();
+        const suggestedSteps = String(document.getElementById("newTaskSteps")?.value || "").trim();
+        const verifierIdeas = String(document.getElementById("newTaskVerifierIdeas")?.value || "").trim();
+
+        if (!displayId) {
+          showError("Display ID is required.");
+          return;
+        }
+
+        if (!paperTitle) {
+          showError("Paper title is required.");
+          return;
+        }
+
+        const existingTask = TASKS.find(task => String(task.task_id) === String(displayId));
+
+        if (existingTask) {
+          const ok = window.confirm("A task with this Display ID already exists. Continue to update it?");
+          if (!ok) return;
+        }
+
+        const sources = sourcesText
+          ? sourcesText
+              .split(/
+|,/)
+              .map(source => source.trim())
+              .filter(Boolean)
+          : [];
+
+        const { error } = await supabaseClient
+          .from("harbor_tasks")
+          .upsert({
+            display_id: displayId,
+            priority,
+            domain,
+            subdomain,
+            paper_title: paperTitle,
+            venue_year: venueYear,
+            sources,
+            task_concept: taskConcept,
+            suggested_harbor_steps: suggestedSteps,
+            verifier_ideas: verifierIdeas
+          }, {
+            onConflict: "display_id"
+          });
+
+        if (error) {
+          console.error(error);
+          showError("Could not add this task.");
+          return;
+        }
+
+        const modal = document.querySelector(".modal-backdrop");
+        if (modal) modal.remove();
+
+        showMessage(existingTask ? "Task updated." : "Task added.");
         await loadTasks();
       }
 
