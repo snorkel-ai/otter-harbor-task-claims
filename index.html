@@ -19,6 +19,7 @@
         --yellow-soft: #fff7df;
         --purple-soft: #eef0ff;
         --red-soft: #fdecec;
+        --orange-soft: #fff3df;
       }
 
       * {
@@ -48,7 +49,7 @@
 
       .subtitle {
         margin-top: 14px;
-        max-width: 620px;
+        max-width: 720px;
         color: var(--muted);
         font-size: 18px;
         line-height: 1.45;
@@ -58,6 +59,74 @@
         max-width: 1180px;
         margin: 0 auto;
         padding: 16px 28px 64px;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .identity {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin: 22px 0 28px;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 12px 32px rgba(17, 24, 39, 0.05);
+      }
+
+      .panel h2 {
+        margin: 0 0 10px;
+        font-size: 20px;
+        letter-spacing: -0.025em;
+      }
+
+      .panel p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .panel-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .message {
+        display: none;
+        margin: 16px 0;
+        border-radius: 14px;
+        padding: 14px 16px;
+        background: var(--green-soft);
+        color: #24633f;
+        font-weight: 700;
+      }
+
+      .error {
+        display: none;
+        margin: 16px 0;
+        border-radius: 14px;
+        padding: 14px 16px;
+        background: var(--red-soft);
+        color: #9b2828;
+        font-weight: 700;
+        white-space: pre-wrap;
       }
 
       .search-shell {
@@ -102,12 +171,40 @@
         font-size: 18px;
       }
 
+      .panel input {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #fff;
+      }
+
       input::placeholder {
         color: #a0a6b2;
       }
 
       .stats {
-        display: none;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 26px;
+      }
+
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 24px;
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
       }
 
       .section-heading {
@@ -203,6 +300,13 @@
         color: #9b2828;
       }
 
+      .Expired,
+      .Abandoned,
+      .Reopened {
+        background: var(--soft);
+        color: var(--muted);
+      }
+
       .task-title {
         margin: 0 0 10px;
         font-size: 20px;
@@ -237,7 +341,9 @@
 
       .link-button,
       .primary-button,
-      .danger-button {
+      .danger-button,
+      .success-button,
+      .warning-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -270,12 +376,46 @@
         background: var(--red-soft);
       }
 
+      .success-button {
+        color: #1f6b3a;
+        background: var(--green-soft);
+      }
+
+      .warning-button {
+        color: #72520b;
+        background: var(--orange-soft);
+      }
+
+      button:disabled,
+      a.disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
       .empty {
         padding: 36px;
         border: 1px dashed var(--border);
         border-radius: 18px;
         color: var(--muted);
         background: rgba(255, 255, 255, 0.7);
+      }
+
+      .list-item {
+        border-top: 1px solid #edf0f4;
+        padding: 12px 0;
+      }
+
+      .list-item:first-of-type {
+        border-top: 0;
+      }
+
+      .list-title {
+        font-weight: 800;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
       }
 
       .modal-backdrop {
@@ -365,7 +505,9 @@
       }
 
       @media (max-width: 900px) {
-        .task-grid {
+        .panel-grid,
+        .task-grid,
+        .stats {
           grid-template-columns: 1fr;
         }
 
@@ -377,6 +519,11 @@
         .search-part {
           border-right: 0;
           border-bottom: 1px solid var(--border);
+        }
+
+        .top-bar {
+          align-items: flex-start;
+          flex-direction: column;
         }
 
         .modal {
@@ -392,33 +539,52 @@
   <body>
     <header>
       <h1>Harbor Task Claims</h1>
-      <div class="subtitle">Browse available research tasks, review the details, and claim one to start building.</div>
+      <div class="subtitle">Browse available research tasks, claim one task at a time, submit your Snorkel Submission ID, and track review status.</div>
     </header>
 
     <main>
+      <div class="top-bar">
+        <div class="identity" id="identity">Loading session...</div>
+        <div>
+          <button class="primary-button" id="signInButton" onclick="signInWithGitHub()">Sign in with GitHub</button>
+          <button class="link-button" id="signOutButton" onclick="signOut()" style="display: none;">Sign out</button>
+        </div>
+      </div>
+
+      <div id="message" class="message"></div>
+      <div id="error" class="error"></div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="panel-grid">
+        <div class="panel" id="myClaimPanel"></div>
+        <div class="panel" id="submittedPanel"></div>
+      </div>
+
+      <div class="panel" id="adminPanel" style="display: none;"></div>
+
       <div class="search-shell">
         <div class="search-part">
           <span class="label">Where</span>
-          <input id="search" placeholder="Search tasks... e.g. by domain" oninput="render()">
+          <input id="search" placeholder="Search tasks... e.g. by domain" oninput="renderTaskList()">
         </div>
 
         <div class="filter-part">
           <span class="label">Status</span>
-          <select id="statusFilter" onchange="render()">
-  <option value="All">All</option>
-  <option value="Available">Available</option>
-  <option value="Claimed">Claimed</option>
-  <option value="Submitted">Submitted</option>
-  <option value="Approved">Approved</option>
-  <option value="Blocked">Blocked</option>
-</select>
+          <select id="statusFilter" onchange="renderTaskList()">
+            <option value="All">All</option>
+            <option value="My Claims">My Claims</option>
+            <option value="Available">Available</option>
+            <option value="Claimed">Claimed</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Approved">Approved</option>
+            <option value="Blocked">Blocked</option>
+          </select>
         </div>
       </div>
 
-      <div class="stats" id="stats"></div>
-
       <div class="section-heading">
-        <h2 id="sectionTitle">Available Harbor Tasks</h2>
+        <h2 id="sectionTitle">All Harbor Tasks</h2>
         <span class="count-bubble" id="visibleCount">0</span>
       </div>
 
@@ -426,6 +592,13 @@
     </main>
 
     <script>
+      const CLAIM_TTL_HOURS = 24;
+      const ADMIN_EMAILS = [
+        "tyler.davis@snorkel.ai",
+        "cairo.simpson@snorkel.ai",
+        "fernando.perezrivera@snorkel.ai"
+      ];
+
       let TASKS = [];
       let CLAIMS = [];
       let currentUser = null;
@@ -440,6 +613,7 @@
 
         if (error) {
           console.error(error);
+          showError("Could not load session.");
           return;
         }
 
@@ -456,11 +630,35 @@
 
         if (error) {
           console.error(error);
-          alert("Could not start GitHub sign-in. Check the browser console.");
+          showError("Could not start GitHub sign-in.");
+        }
+      }
+
+      async function signOut() {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        await loadTasks();
+      }
+
+      function isAdmin() {
+        const email = String(currentUser?.email || "").toLowerCase();
+        return ADMIN_EMAILS.includes(email);
+      }
+
+      async function expireOldClaims() {
+        const { error } = await supabaseClient.rpc("expire_old_harbor_claims");
+
+        if (error) {
+          console.error(error);
         }
       }
 
       async function loadTasks() {
+        clearMessage();
+        clearError();
+
+        await expireOldClaims();
+
         const { data: tasksData, error: tasksError } = await supabaseClient
           .from("harbor_tasks")
           .select("*")
@@ -468,31 +666,25 @@
 
         if (tasksError) {
           console.error(tasksError);
-          alert("Could not load tasks from Supabase. Check the browser console.");
+          showError("Could not load tasks from Supabase.");
           return;
         }
 
-        let claimsData = [];
+        const { data: claimsData, error: claimsError } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .select("id, task_id, user_id, user_email, status, snorkel_submission_id, selected_at, submitted_for_review_at, completed_at, reviewed_by, reviewed_at, expires_at, admin_email, notes")
+          .order("selected_at", { ascending: false });
 
-        if (currentUser) {
-          const { data, error } = await supabaseClient
-            .from("harbor_selected_tasks")
-            .select("id, task_id, user_id, status, selected_at, submitted_for_review_at, completed_at")
-            .in("status", ["claimed", "submitted"]);
-
-          if (error) {
-            console.error(error);
-            alert("Could not load claims from Supabase. Check the browser console.");
-            return;
-          }
-
-          claimsData = data || [];
+        if (claimsError) {
+          console.error(claimsError);
+          showError("Could not load claim state from Supabase.");
+          return;
         }
 
-        CLAIMS = claimsData;
+        CLAIMS = claimsData || [];
 
-        TASKS = tasksData.map(task => {
-          const activeClaim = CLAIMS.find(claim => claim.task_id === task.id);
+        TASKS = (tasksData || []).map(task => {
+          const activeClaim = getCurrentClaimForTask(task.id);
           const ownedByCurrentUser = Boolean(
             activeClaim &&
             currentUser &&
@@ -505,26 +697,87 @@
             status: activeClaim ? claimStatusLabel(activeClaim.status) : "Available",
             active_claim_id: activeClaim?.id || null,
             active_claim_user_id: activeClaim?.user_id || null,
-            active_claim_owned_by_me: ownedByCurrentUser
+            active_claim_email: activeClaim?.user_email || "",
+            active_claim_owned_by_me: ownedByCurrentUser,
+            active_claim_submission_id: activeClaim?.snorkel_submission_id || "",
+            active_claim_selected_at: activeClaim?.selected_at || "",
+            active_claim_expires_at: activeClaim?.expires_at || "",
+            active_claim_submitted_at: activeClaim?.submitted_for_review_at || "",
+            active_claim_completed_at: activeClaim?.completed_at || ""
           };
         });
 
         render();
       }
 
+      function getCurrentClaimForTask(taskUuid) {
+        return CLAIMS.find(claim => {
+          return claim.task_id === taskUuid &&
+            ["claimed", "submitted", "approved", "blocked"].includes(claim.status);
+        }) || null;
+      }
+
+      function getMyActiveClaim() {
+        if (!currentUser) return null;
+
+        return TASKS.find(task =>
+          task.status === "Claimed" &&
+          task.active_claim_owned_by_me
+        ) || null;
+      }
+
+      function getMySubmittedTasks() {
+        if (!currentUser) return [];
+
+        return TASKS.filter(task =>
+          task.active_claim_owned_by_me &&
+          ["Submitted", "Approved"].includes(task.status)
+        );
+      }
+
+      function getAdminReviewQueue() {
+        if (!isAdmin()) return [];
+
+        return TASKS.filter(task => task.status === "Submitted");
+      }
+
       function claimStatusLabel(status) {
-        if (status === "submitted") return "Submitted";
         if (status === "claimed") return "Claimed";
+        if (status === "submitted") return "Submitted";
+        if (status === "approved") return "Approved";
+        if (status === "blocked") return "Blocked";
         return "Available";
       }
 
       function render() {
+        renderIdentity();
         renderStats();
+        renderMyClaimPanel();
+        renderSubmittedPanel();
+        renderAdminPanel();
         renderTaskList();
+      }
+
+      function renderIdentity() {
+        const identity = document.getElementById("identity");
+        const signInButton = document.getElementById("signInButton");
+        const signOutButton = document.getElementById("signOutButton");
+
+        if (!currentUser) {
+          identity.textContent = "Not signed in.";
+          signInButton.style.display = "inline-flex";
+          signOutButton.style.display = "none";
+          return;
+        }
+
+        identity.textContent = `Signed in as ${currentUser.email || currentUser.id}${isAdmin() ? " · Admin" : ""}`;
+        signInButton.style.display = "none";
+        signOutButton.style.display = "inline-flex";
       }
 
       function renderStats() {
         const counts = {
+          total: TASKS.length,
           available: TASKS.filter(t => t.status === "Available").length,
           claimed: TASKS.filter(t => t.status === "Claimed").length,
           submitted: TASKS.filter(t => t.status === "Submitted").length,
@@ -532,10 +785,125 @@
         };
 
         document.getElementById("stats").innerHTML = `
-          <div>${counts.available} Available</div>
-          <div>${counts.claimed} Claimed</div>
-          <div>${counts.submitted} Submitted</div>
-          <div>${counts.approved} Approved</div>
+          <div class="stat"><strong>${counts.total}</strong><span>Total</span></div>
+          <div class="stat"><strong>${counts.available}</strong><span>Available</span></div>
+          <div class="stat"><strong>${counts.claimed}</strong><span>Claimed</span></div>
+          <div class="stat"><strong>${counts.submitted}</strong><span>Submitted</span></div>
+          <div class="stat"><strong>${counts.approved}</strong><span>Approved</span></div>
+        `;
+      }
+
+      function renderMyClaimPanel() {
+        const panel = document.getElementById("myClaimPanel");
+
+        if (!currentUser) {
+          panel.innerHTML = `
+            <h2>Your active claim</h2>
+            <p>Sign in with GitHub to claim and submit tasks.</p>
+            <div class="panel-actions">
+              <button class="primary-button" onclick="signInWithGitHub()">Sign in with GitHub</button>
+            </div>
+          `;
+          return;
+        }
+
+        const claim = getMyActiveClaim();
+
+        if (!claim) {
+          panel.innerHTML = `
+            <h2>Your active claim</h2>
+            <p>You do not currently have an active claim.</p>
+          `;
+          return;
+        }
+
+        panel.innerHTML = `
+          <h2>Your active claim</h2>
+          <div class="list-title">#${escapeHtml(claim.task_id)} — ${escapeHtml(claim.paper_title)}</div>
+          <div class="muted">Claimed ${formatDate(claim.active_claim_selected_at)}</div>
+          <div class="muted">Expires ${formatDate(claim.active_claim_expires_at)}</div>
+
+          <div style="margin-top: 14px;">
+            <input id="snorkelSubmissionId" placeholder="Snorkel Submission ID">
+          </div>
+
+          <div class="panel-actions">
+            <button class="success-button" onclick="submitMyClaim()">Submit</button>
+            <button class="danger-button" onclick="releaseMyClaim()">Release</button>
+          </div>
+        `;
+      }
+
+      function renderSubmittedPanel() {
+        const panel = document.getElementById("submittedPanel");
+
+        if (!currentUser) {
+          panel.innerHTML = `
+            <h2>Your submitted tasks</h2>
+            <p>Sign in to see your submitted tasks.</p>
+          `;
+          return;
+        }
+
+        const submitted = getMySubmittedTasks();
+
+        if (!submitted.length) {
+          panel.innerHTML = `
+            <h2>Your submitted tasks</h2>
+            <p>No submitted tasks yet.</p>
+          `;
+          return;
+        }
+
+        panel.innerHTML = `
+          <h2>Your submitted tasks</h2>
+          ${submitted.slice(0, 10).map(task => `
+            <div class="list-item">
+              <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+              <div class="muted">Status: ${escapeHtml(task.status)}</div>
+              <div class="muted">Submitted: ${formatDate(task.active_claim_submitted_at)}</div>
+              <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
+            </div>
+          `).join("")}
+        `;
+      }
+
+      function renderAdminPanel() {
+        const panel = document.getElementById("adminPanel");
+
+        if (!isAdmin()) {
+          panel.style.display = "none";
+          panel.innerHTML = "";
+          return;
+        }
+
+        panel.style.display = "block";
+
+        const queue = getAdminReviewQueue();
+
+        if (!queue.length) {
+          panel.innerHTML = `
+            <h2>Admin review queue</h2>
+            <p>No submitted tasks are waiting for review.</p>
+          `;
+          return;
+        }
+
+        panel.innerHTML = `
+          <h2>Admin review queue</h2>
+          <p>Approve if the example was used. Reopen if it should return to the available pool.</p>
+          ${queue.map(task => `
+            <div class="list-item">
+              <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+              <div class="muted">Submitted by: ${escapeHtml(task.active_claim_email || "")}</div>
+              <div class="muted">Submitted at: ${formatDate(task.active_claim_submitted_at)}</div>
+              <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
+              <div class="panel-actions">
+                <button class="success-button" onclick="approveTask('${escapeAttr(String(task.task_id))}')">Approve</button>
+                <button class="warning-button" onclick="reopenTask('${escapeAttr(String(task.task_id))}')">Reopen</button>
+              </div>
+            </div>
+          `).join("")}
         `;
       }
 
@@ -551,11 +919,19 @@
             task.paper_title,
             task.venue_year,
             task.priority,
-            task.task_concept
+            task.task_concept,
+            task.active_claim_email
           ].join(" ").toLowerCase();
 
           const matchesText = !q || blob.includes(q);
-          const matchesStatus = status === "All" || task.status === status;
+
+          let matchesStatus = true;
+
+          if (status === "My Claims") {
+            matchesStatus = Boolean(task.active_claim_owned_by_me);
+          } else if (status !== "All") {
+            matchesStatus = task.status === status;
+          }
 
           return matchesText && matchesStatus;
         });
@@ -586,6 +962,10 @@
 
                 <p class="preview">${escapeHtml(shorten(task.task_concept || "", 210))}</p>
 
+                ${task.status !== "Available" && task.active_claim_email ? `
+                  <p class="muted">${escapeHtml(task.status)} by ${escapeHtml(task.active_claim_email)}</p>
+                ` : ""}
+
                 <div class="task-footer">
                   <a class="link-button" href="#" onclick="openTaskDetails('${escapeAttr(String(task.task_id))}'); return false;">View details</a>
                   ${renderTaskAction(task)}
@@ -598,11 +978,15 @@
 
       function renderTaskAction(task) {
         if (task.status === "Available") {
-          return `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>`;
+          return `<a class="primary-button" href="#" onclick="claimTask('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>`;
         }
 
         if (task.active_claim_owned_by_me && task.status === "Claimed") {
-          return `<a class="danger-button" href="#" onclick="unclaimTask('${escapeAttr(String(task.task_id))}'); return false;">Unclaim task</a>`;
+          return `<a class="danger-button" href="#" onclick="releaseMyClaim(); return false;">Release</a>`;
+        }
+
+        if (task.active_claim_owned_by_me && task.status === "Submitted") {
+          return `<span class="pill Submitted">Waiting for review</span>`;
         }
 
         return "";
@@ -667,6 +1051,13 @@
               <div>${sourcesHtml}</div>
             </div>
 
+            ${task.status !== "Available" ? `
+              <div class="modal-section">
+                <h3>Claim Status</h3>
+                <p>${escapeHtml(task.status)}${task.active_claim_email ? " by " + escapeHtml(task.active_claim_email) : ""}</p>
+              </div>
+            ` : ""}
+
             <div class="modal-footer">
               <a class="link-button" href="#" onclick="this.closest('.modal-backdrop').remove(); return false;">Cancel</a>
               ${renderTaskAction(task)}
@@ -677,11 +1068,14 @@
         document.body.appendChild(modal);
       }
 
-      async function requestClaim(taskId) {
+      async function claimTask(taskId) {
+        clearMessage();
+        clearError();
+
         const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
         if (!task) {
-          alert("Could not find task #" + taskId);
+          showError("Could not find task #" + taskId);
           return;
         }
 
@@ -689,6 +1083,21 @@
           await signInWithGitHub();
           return;
         }
+
+        const myActiveClaim = getMyActiveClaim();
+
+        if (myActiveClaim) {
+          showError("You already have an active claim. Submit or release it before claiming another task.");
+          return;
+        }
+
+        if (task.status !== "Available") {
+          showError("This task is not available.");
+          return;
+        }
+
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + CLAIM_TTL_HOURS * 60 * 60 * 1000);
 
         const { error } = await supabaseClient
           .from("harbor_selected_tasks")
@@ -696,52 +1105,217 @@
             task_id: task.id,
             user_id: currentUser.id,
             user_email: currentUser.email || null,
-            status: "claimed"
+            status: "claimed",
+            selected_at: now.toISOString(),
+            expires_at: expiresAt.toISOString()
           });
 
         if (error) {
           console.error(error);
-          alert("Could not claim this task. It may already be claimed, or your session may need to refresh.");
+          showError("Could not claim this task. It may already be claimed, or you may already have an active claim.");
           return;
         }
 
-        alert("Task claimed.");
+        showMessage("Task claimed.");
         await loadTasks();
       }
 
-      async function unclaimTask(taskId) {
-        const task = TASKS.find(t => String(t.task_id) === String(taskId));
-
-        if (!task || !task.active_claim_id) {
-          alert("Could not find your active claim for task #" + taskId);
-          return;
-        }
+      async function releaseMyClaim() {
+        clearMessage();
+        clearError();
 
         if (!currentUser) {
           await signInWithGitHub();
           return;
         }
 
+        const claim = getMyActiveClaim();
+
+        if (!claim || !claim.active_claim_id) {
+          showError("You do not have an active claim.");
+          return;
+        }
+
         const { error } = await supabaseClient
           .from("harbor_selected_tasks")
-          .update({ status: "abandoned" })
-          .eq("id", task.active_claim_id)
+          .update({
+            status: "abandoned",
+            expires_at: null,
+            notes: "Released by contributor"
+          })
+          .eq("id", claim.active_claim_id)
           .eq("user_id", currentUser.id);
 
         if (error) {
           console.error(error);
-          alert("Could not unclaim this task. Check the browser console.");
+          showError("Could not release your claim.");
           return;
         }
 
-        alert("Task unclaimed.");
+        showMessage("Claim released.");
         await loadTasks();
+      }
+
+      async function submitMyClaim() {
+        clearMessage();
+        clearError();
+
+        if (!currentUser) {
+          await signInWithGitHub();
+          return;
+        }
+
+        const claim = getMyActiveClaim();
+
+        if (!claim || !claim.active_claim_id) {
+          showError("You do not have an active claim to submit.");
+          return;
+        }
+
+        const submissionInput = document.getElementById("snorkelSubmissionId");
+        const submissionId = String(submissionInput?.value || "").trim();
+
+        if (!submissionId) {
+          showError("Snorkel Submission ID is required.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+
+        const { error } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .update({
+            status: "submitted",
+            snorkel_submission_id: submissionId,
+            submitted_for_review_at: now,
+            expires_at: null
+          })
+          .eq("id", claim.active_claim_id)
+          .eq("user_id", currentUser.id);
+
+        if (error) {
+          console.error(error);
+          showError("Could not submit your claim.");
+          return;
+        }
+
+        showMessage("Task submitted for review.");
+        await loadTasks();
+      }
+
+      async function approveTask(taskId) {
+        clearMessage();
+        clearError();
+
+        if (!isAdmin()) {
+          showError("You do not have permission to approve tasks.");
+          return;
+        }
+
+        const task = TASKS.find(t => String(t.task_id) === String(taskId));
+
+        if (!task || task.status !== "Submitted") {
+          showError("This task is not currently submitted for review.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+
+        const { error } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .update({
+            status: "approved",
+            completed_at: now,
+            reviewed_at: now,
+            reviewed_by: currentUser.id,
+            admin_email: currentUser.email || null
+          })
+          .eq("id", task.active_claim_id);
+
+        if (error) {
+          console.error(error);
+          showError("Could not approve this task.");
+          return;
+        }
+
+        showMessage("Task approved.");
+        await loadTasks();
+      }
+
+      async function reopenTask(taskId) {
+        clearMessage();
+        clearError();
+
+        if (!isAdmin()) {
+          showError("You do not have permission to reopen tasks.");
+          return;
+        }
+
+        const task = TASKS.find(t => String(t.task_id) === String(taskId));
+
+        if (!task || task.status !== "Submitted") {
+          showError("This task is not currently submitted for review.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+
+        const { error } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .update({
+            status: "reopened",
+            reviewed_at: now,
+            reviewed_by: currentUser.id,
+            admin_email: currentUser.email || null,
+            expires_at: null,
+            notes: "Reopened by admin"
+          })
+          .eq("id", task.active_claim_id);
+
+        if (error) {
+          console.error(error);
+          showError("Could not reopen this task.");
+          return;
+        }
+
+        showMessage("Task reopened and returned to available pool.");
+        await loadTasks();
+      }
+
+      function showMessage(message) {
+        const el = document.getElementById("message");
+        el.textContent = message || "";
+        el.style.display = message ? "block" : "none";
+      }
+
+      function showError(message) {
+        const el = document.getElementById("error");
+        el.textContent = message || "";
+        el.style.display = message ? "block" : "none";
+      }
+
+      function clearMessage() {
+        showMessage("");
+      }
+
+      function clearError() {
+        showError("");
       }
 
       function shorten(value, maxLength) {
         const text = String(value || "");
         if (text.length <= maxLength) return text;
         return text.slice(0, maxLength).trim() + "...";
+      }
+
+      function formatDate(value) {
+        if (!value) return "";
+
+        const date = new Date(value);
+
+        if (isNaN(date.getTime())) return "";
+
+        return date.toLocaleString();
       }
 
       function escapeHtml(value) {
