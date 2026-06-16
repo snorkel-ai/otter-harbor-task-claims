@@ -426,7 +426,32 @@
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
 
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
 
+async function loadSession() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  currentUser = data.session?.user || null;
+}
+
+async function signInWithGitHub() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo: "https://snorkel-ai.github.io/otter-harbor-claims/"
+    }
+  });
+
+  if (error) {
+    console.error(error);
+    alert("Could not start GitHub sign-in. Check the browser console.");
+  }
+}   
       async function loadTasks() {
         const { data, error } = await supabaseClient
           .from("harbor_tasks")
@@ -617,8 +642,12 @@
       function escapeAttr(value) {
         return escapeHtml(value).replace(/`/g, "&#096;");
       }
+async function init() {
+  await loadSession();
+  await loadTasks();
+}
 
-      loadTasks();
+init();
     </script>
   </body>
 </html>
