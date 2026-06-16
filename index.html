@@ -236,7 +236,8 @@
       }
 
       .link-button,
-      .primary-button {
+      .primary-button,
+      .danger-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -262,6 +263,11 @@
 
       .primary-button:hover {
         background: var(--blue-dark);
+      }
+
+      .danger-button {
+        color: #9b2828;
+        background: var(--red-soft);
       }
 
       .empty {
@@ -421,56 +427,95 @@
 
     <script>
       let TASKS = [];
+      let CLAIMS = [];
+      let currentUser = null;
 
       const SUPABASE_URL = "https://mgvckvbwwbbnifjxkfzk.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
 
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentUser = null;
 
-async function loadSession() {
-  const { data, error } = await supabaseClient.auth.getSession();
+      async function loadSession() {
+        const { data, error } = await supabaseClient.auth.getSession();
 
-  if (error) {
-    console.error(error);
-    return;
-  }
+        if (error) {
+          console.error(error);
+          return;
+        }
 
-  currentUser = data.session?.user || null;
-}
+        currentUser = data.session?.user || null;
+      }
 
-async function signInWithGitHub() {
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: "https://snorkel-ai.github.io/otter-harbor-claims/"
-    }
-  });
+      async function signInWithGitHub() {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider: "github",
+          options: {
+            redirectTo: "https://snorkel-ai.github.io/otter-harbor-claims/"
+          }
+        });
 
-  if (error) {
-    console.error(error);
-    alert("Could not start GitHub sign-in. Check the browser console.");
-  }
-}   
+        if (error) {
+          console.error(error);
+          alert("Could not start GitHub sign-in. Check the browser console.");
+        }
+      }
+
       async function loadTasks() {
-        const { data, error } = await supabaseClient
+        const { data: tasksData, error: tasksError } = await supabaseClient
           .from("harbor_tasks")
           .select("*")
           .order("display_id", { ascending: true });
 
-        if (error) {
-          console.error(error);
+        if (tasksError) {
+          console.error(tasksError);
           alert("Could not load tasks from Supabase. Check the browser console.");
           return;
         }
 
-        TASKS = data.map(task => ({
-          ...task,
-          task_id: task.display_id,
-          status: "Available"
-        }));
+        let claimsData = [];
+
+        if (currentUser) {
+          const { data, error } = await supabaseClient
+            .from("harbor_selected_tasks")
+            .select("id, task_id, user_id, status, selected_at, submitted_for_review_at, completed_at")
+            .in("status", ["claimed", "submitted"]);
+
+          if (error) {
+            console.error(error);
+            alert("Could not load claims from Supabase. Check the browser console.");
+            return;
+          }
+
+          claimsData = data || [];
+        }
+
+        CLAIMS = claimsData;
+
+        TASKS = tasksData.map(task => {
+          const activeClaim = CLAIMS.find(claim => claim.task_id === task.id);
+          const ownedByCurrentUser = Boolean(
+            activeClaim &&
+            currentUser &&
+            activeClaim.user_id === currentUser.id
+          );
+
+          return {
+            ...task,
+            task_id: task.display_id,
+            status: activeClaim ? claimStatusLabel(activeClaim.status) : "Available",
+            active_claim_id: activeClaim?.id || null,
+            active_claim_user_id: activeClaim?.user_id || null,
+            active_claim_owned_by_me: ownedByCurrentUser
+          };
+        });
 
         render();
+      }
+
+      function claimStatusLabel(status) {
+        if (status === "submitted") return "Submitted";
+        if (status === "claimed") return "Claimed";
+        return "Available";
       }
 
       function render() {
@@ -543,12 +588,24 @@ async function signInWithGitHub() {
 
                 <div class="task-footer">
                   <a class="link-button" href="#" onclick="openTaskDetails('${escapeAttr(String(task.task_id))}'); return false;">View details</a>
-                  ${task.status === "Available" ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ""}
+                  ${renderTaskAction(task)}
                 </div>
               </article>
             `).join("")}
           </div>
         `;
+      }
+
+      function renderTaskAction(task) {
+        if (task.status === "Available") {
+          return `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>`;
+        }
+
+        if (task.active_claim_owned_by_me && task.status === "Claimed") {
+          return `<a class="danger-button" href="#" onclick="unclaimTask('${escapeAttr(String(task.task_id))}'); return false;">Unclaim task</a>`;
+        }
+
+        return "";
       }
 
       function openTaskDetails(taskId) {
@@ -612,7 +669,7 @@ async function signInWithGitHub() {
 
             <div class="modal-footer">
               <a class="link-button" href="#" onclick="this.closest('.modal-backdrop').remove(); return false;">Cancel</a>
-              ${task.status === "Available" ? `<a class="primary-button" href="#" onclick="requestClaim('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>` : ""}
+              ${renderTaskAction(task)}
             </div>
           </div>
         `;
@@ -620,37 +677,66 @@ async function signInWithGitHub() {
         document.body.appendChild(modal);
       }
 
-async function requestClaim(taskId) {
-  const task = TASKS.find(t => String(t.task_id) === String(taskId));
+      async function requestClaim(taskId) {
+        const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
-  if (!task) {
-    alert("Could not find task #" + taskId);
-    return;
-  }
+        if (!task) {
+          alert("Could not find task #" + taskId);
+          return;
+        }
 
-  if (!currentUser) {
-    await signInWithGitHub();
-    return;
-  }
+        if (!currentUser) {
+          await signInWithGitHub();
+          return;
+        }
 
-  const { error } = await supabaseClient
-    .from("harbor_selected_tasks")
-    .insert({
-      task_id: task.id,
-      user_id: currentUser.id,
-      user_email: currentUser.email || null,
-      status: "claimed"
-    });
+        const { error } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .insert({
+            task_id: task.id,
+            user_id: currentUser.id,
+            user_email: currentUser.email || null,
+            status: "claimed"
+          });
 
-  if (error) {
-    console.error(error);
-    alert("Could not claim this task. It may already be claimed, or your session may need to refresh.");
-    return;
-  }
+        if (error) {
+          console.error(error);
+          alert("Could not claim this task. It may already be claimed, or your session may need to refresh.");
+          return;
+        }
 
-  alert("Task claimed.");
-  await loadTasks();
-}
+        alert("Task claimed.");
+        await loadTasks();
+      }
+
+      async function unclaimTask(taskId) {
+        const task = TASKS.find(t => String(t.task_id) === String(taskId));
+
+        if (!task || !task.active_claim_id) {
+          alert("Could not find your active claim for task #" + taskId);
+          return;
+        }
+
+        if (!currentUser) {
+          await signInWithGitHub();
+          return;
+        }
+
+        const { error } = await supabaseClient
+          .from("harbor_selected_tasks")
+          .update({ status: "abandoned" })
+          .eq("id", task.active_claim_id)
+          .eq("user_id", currentUser.id);
+
+        if (error) {
+          console.error(error);
+          alert("Could not unclaim this task. Check the browser console.");
+          return;
+        }
+
+        alert("Task unclaimed.");
+        await loadTasks();
+      }
 
       function shorten(value, maxLength) {
         const text = String(value || "");
@@ -670,12 +756,13 @@ async function requestClaim(taskId) {
       function escapeAttr(value) {
         return escapeHtml(value).replace(/`/g, "&#096;");
       }
-async function init() {
-  await loadSession();
-  await loadTasks();
-}
 
-init();
+      async function init() {
+        await loadSession();
+        await loadTasks();
+      }
+
+      init();
     </script>
   </body>
 </html>
