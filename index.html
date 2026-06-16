@@ -613,7 +613,7 @@
       let currentUser = null;
 
       const SUPABASE_URL = "https://mgvckvbwwbbnifjxkfzk.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
+      const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_PUBLIC_KEY_HERE";
 
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1330,7 +1330,6 @@
         await loadTasks();
       }
 
-
       function openAddTaskModal() {
         if (!isAdmin()) {
           showError("You do not have permission to add tasks.");
@@ -1452,8 +1451,7 @@
 
         const sources = sourcesText
           ? sourcesText
-              .split(/
-|,/)
+              .split(/\n|,/)
               .map(source => source.trim())
               .filter(Boolean)
           : [];
