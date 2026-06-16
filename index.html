@@ -376,6 +376,7 @@
         }
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 
   <body>
@@ -414,13 +415,33 @@
     </main>
 
     <script>
-      let TASKS = [];
+let TASKS = [];
 
-      async function loadTasks() {
-        const response = await fetch('tasks.json', { cache: 'no-store' });
-        TASKS = await response.json();
-        render();
-      }
+const SUPABASE_URL = "https://mgvckvbwwbbnifjxkfzk.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndmNrdmJ3d2JibmlmanhrZnprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MTQ4NDYsImV4cCI6MjA5NzE5MDg0Nn0.2oDcKT_oBX5U1gXKH_-7EKCEgDSAyoiMHol6XdXCiJM";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function loadTasks() {
+  const { data, error } = await supabaseClient
+    .from("harbor_tasks")
+    .select("*")
+    .order("display_id", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    alert("Could not load tasks from Supabase. Check the browser console.");
+    return;
+  }
+
+  TASKS = data.map(task => ({
+    ...task,
+    task_id: task.display_id,
+    status: "Available"
+  }));
+
+  render();
+}
 
       function render() {
         renderStats();
