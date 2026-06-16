@@ -881,29 +881,33 @@
 
         const queue = getAdminReviewQueue();
 
-        if (!queue.length) {
-          panel.innerHTML = `
-            <h2>Admin review queue</h2>
-            <p>No submitted tasks are waiting for review.</p>
-          `;
-          return;
-        }
-
         panel.innerHTML = `
-          <h2>Admin review queue</h2>
-          <p>Approve if the example was used. Reopen if it should return to the available pool.</p>
-          ${queue.map(task => `
-            <div class="list-item">
-              <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
-              <div class="muted">Submitted by: ${escapeHtml(task.active_claim_email || "")}</div>
-              <div class="muted">Submitted at: ${formatDate(task.active_claim_submitted_at)}</div>
-              <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
-              <div class="panel-actions">
-                <button class="success-button" onclick="approveTask('${escapeAttr(String(task.task_id))}')">Approve</button>
-                <button class="warning-button" onclick="reopenTask('${escapeAttr(String(task.task_id))}')">Reopen</button>
-              </div>
-            </div>
-          `).join("")}
+          <h2>Admin tools</h2>
+          <p>Use these tools carefully. Clear expired claims only affects claims past the 24-hour window.</p>
+          <div class="panel-actions">
+            <button class="warning-button" onclick="clearExpiredClaims()">Clear expired claims</button>
+          </div>
+
+          <div style="margin-top: 22px;">
+            <h2>Admin review queue</h2>
+            ${queue.length ? `
+              <p>Approve if the example was used. Reopen if it should return to the available pool.</p>
+              ${queue.map(task => `
+                <div class="list-item">
+                  <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+                  <div class="muted">Submitted by: ${escapeHtml(task.active_claim_email || "")}</div>
+                  <div class="muted">Submitted at: ${formatDate(task.active_claim_submitted_at)}</div>
+                  <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
+                  <div class="panel-actions">
+                    <button class="success-button" onclick="approveTask('${escapeAttr(String(task.task_id))}')">Approve</button>
+                    <button class="warning-button" onclick="undoSubmittedOrApprovedTask('${escapeAttr(String(task.task_id))}')">Undo submission</button>
+                  </div>
+                </div>
+              `).join("")}
+            ` : `
+              <p>No submitted tasks are waiting for review.</p>
+            `}
+          </div>
         `;
       }
 
@@ -977,19 +981,25 @@
       }
 
       function renderTaskAction(task) {
+        const actions = [];
+
         if (task.status === "Available") {
-          return `<a class="primary-button" href="#" onclick="claimTask('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>`;
+          actions.push(`<a class="primary-button" href="#" onclick="claimTask('${escapeAttr(String(task.task_id))}'); return false;">Claim task</a>`);
         }
 
         if (task.active_claim_owned_by_me && task.status === "Claimed") {
-          return `<a class="danger-button" href="#" onclick="releaseMyClaim(); return false;">Release</a>`;
+          actions.push(`<a class="danger-button" href="#" onclick="releaseMyClaim(); return false;">Release</a>`);
         }
 
         if (task.active_claim_owned_by_me && task.status === "Submitted") {
-          return `<span class="pill Submitted">Waiting for review</span>`;
+          actions.push(`<span class="pill Submitted">Waiting for review</span>`);
         }
 
-        return "";
+        if (isAdmin() && ["Submitted", "Approved"].includes(task.status)) {
+          actions.push(`<a class="warning-button" href="#" onclick="undoSubmittedOrApprovedTask('${escapeAttr(String(task.task_id))}'); return false;">Undo submission</a>`);
+        }
+
+        return actions.join("");
       }
 
       function openTaskDetails(taskId) {
@@ -1242,19 +1252,25 @@
         await loadTasks();
       }
 
-      async function reopenTask(taskId) {
+      async function undoSubmittedOrApprovedTask(taskId) {
         clearMessage();
         clearError();
 
         if (!isAdmin()) {
-          showError("You do not have permission to reopen tasks.");
+          showError("You do not have permission to undo submissions.");
           return;
         }
 
         const task = TASKS.find(t => String(t.task_id) === String(taskId));
 
-        if (!task || task.status !== "Submitted") {
-          showError("This task is not currently submitted for review.");
+        if (!task || !["Submitted", "Approved"].includes(task.status)) {
+          showError("This task is not currently submitted or approved.");
+          return;
+        }
+
+        const warning = "Warning: this will undo an accepted/submitted task and return it to the available pool. Only continue if the submission was accepted by mistake or needs to be reassigned.";
+
+        if (!window.confirm(warning)) {
           return;
         }
 
@@ -1268,17 +1284,39 @@
             reviewed_by: currentUser.id,
             admin_email: currentUser.email || null,
             expires_at: null,
-            notes: "Reopened by admin"
+            notes: "Submission/approval undone by admin"
           })
           .eq("id", task.active_claim_id);
 
         if (error) {
           console.error(error);
-          showError("Could not reopen this task.");
+          showError("Could not undo this submission.");
           return;
         }
 
-        showMessage("Task reopened and returned to available pool.");
+        showMessage("Submission undone. Task returned to available pool.");
+        await loadTasks();
+      }
+
+      async function clearExpiredClaims() {
+        clearMessage();
+        clearError();
+
+        if (!isAdmin()) {
+          showError("You do not have permission to clear expired claims.");
+          return;
+        }
+
+        const { data, error } = await supabaseClient.rpc("clear_expired_harbor_claims");
+
+        if (error) {
+          console.error(error);
+          showError("Could not clear expired claims.");
+          return;
+        }
+
+        const count = Number(data || 0);
+        showMessage(`${count} expired claim(s) cleared.`);
         await loadTasks();
       }
 
@@ -1286,20 +1324,32 @@
         const el = document.getElementById("message");
         el.textContent = message || "";
         el.style.display = message ? "block" : "none";
+
+        if (message) {
+          alert(message);
+        }
       }
 
       function showError(message) {
         const el = document.getElementById("error");
         el.textContent = message || "";
         el.style.display = message ? "block" : "none";
+
+        if (message) {
+          alert(message);
+        }
       }
 
       function clearMessage() {
-        showMessage("");
+        const el = document.getElementById("message");
+        el.textContent = "";
+        el.style.display = "none";
       }
 
       function clearError() {
-        showError("");
+        const el = document.getElementById("error");
+        el.textContent = "";
+        el.style.display = "none";
       }
 
       function shorten(value, maxLength) {
