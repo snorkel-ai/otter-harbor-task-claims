@@ -554,7 +554,8 @@
     <main>
       <div class="top-bar">
         <div class="identity" id="identity">Loading session...</div>
-        <div>
+        <div class="panel-actions" style="margin-top: 0;">
+          <button class="link-button" onclick="openContributorGuideModal()">How to claim tasks</button>
           <button class="primary-button" id="signInButton" onclick="signInWithGitHub()">Sign in with GitHub</button>
           <button class="link-button" id="signOutButton" onclick="signOut()" style="display: none;">Sign out</button>
         </div>
@@ -675,7 +676,7 @@
 
         if (tasksError) {
           console.error(tasksError);
-          showError("Could not load tasks from Supabase.");
+          showError("Could not load tasks from Supabase:\n" + tasksError.message);
           return;
         }
 
@@ -686,7 +687,7 @@
 
         if (claimsError) {
           console.error(claimsError);
-          showError("Could not load claim state from Supabase.");
+          showError("Could not load claim state from Supabase:\n" + claimsError.message);
           return;
         }
 
@@ -1010,6 +1011,62 @@
         }
 
         return actions.join("");
+      }
+
+      function openContributorGuideModal() {
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+
+        modal.onclick = function(event) {
+          if (event.target === modal) {
+            modal.remove();
+          }
+        };
+
+        modal.innerHTML = `
+          <div class="modal">
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">×</button>
+
+            <h2>How to claim and submit a task</h2>
+            <p class="muted">Use this dashboard to claim one Harbor task at a time, submit your completed work, and track review status.</p>
+
+            <div class="modal-section">
+              <h3>1. Sign in</h3>
+              <p>Click <strong>Sign in with GitHub</strong>. You need to be signed in before you can claim or submit a task.</p>
+            </div>
+
+            <div class="modal-section">
+              <h3>2. Find a task</h3>
+              <p>Browse the task cards, or use search and the status filter to find an available task.</p>
+            </div>
+
+            <div class="modal-section">
+              <h3>3. Review the details</h3>
+              <p>Click <strong>View details</strong> to read the task concept, suggested Harbor steps, verifier ideas, and source links.</p>
+            </div>
+
+            <div class="modal-section">
+              <h3>4. Claim the task</h3>
+              <p>Click <strong>Claim task</strong>. You may only have one active claim at a time. Claims expire after 24 hours if they are not submitted.</p>
+            </div>
+
+            <div class="modal-section">
+              <h3>5. Submit your work</h3>
+              <p>After completing the task, return to the dashboard, paste your <strong>Snorkel Submission ID</strong> into the active claim panel, and click <strong>Submit</strong>.</p>
+            </div>
+
+            <div class="modal-section">
+              <h3>Need to stop?</h3>
+              <p>Click <strong>Release</strong> on your active claim so someone else can claim the task.</p>
+            </div>
+
+            <div class="modal-footer">
+              <a class="primary-button" href="#" onclick="this.closest('.modal-backdrop').remove(); return false;">Got it</a>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
       }
 
       function openTaskDetails(taskId) {
