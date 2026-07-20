@@ -603,6 +603,13 @@
 
     <script>
       const CLAIM_TTL_HOURS = 24;
+      const EXCLUDED_TASK_TITLES = new Set([
+        "RobustAD: Real-World Robustness in Industrial Anomaly Detection",
+        "TGB-Seq: Temporal Graph Benchmark with Sequential Dynamics",
+        "TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling",
+        "Roboflow100-VL: Multi-Domain Object Detection for VLMs",
+        "MORSE-500: Programmatically Controllable Video Benchmark"
+      ]);
       const ADMIN_EMAILS = [
         "tyler.davis@snorkel.ai",
         "cairo.simpson@snorkel.ai",
@@ -695,7 +702,9 @@
 
         CLAIMS = claimsData || [];
 
-        TASKS = (tasksData || []).map(task => {
+        TASKS = (tasksData || [])
+          .filter(task => !EXCLUDED_TASK_TITLES.has(String(task.paper_title || "").trim()))
+          .map(task => {
           const activeClaim = getCurrentClaimForTask(task.id);
           const ownedByCurrentUser = Boolean(
             activeClaim &&
