@@ -704,7 +704,7 @@
 
         TASKS = (tasksData || [])
           .filter(task => !EXCLUDED_TASK_TITLES.has(String(task.paper_title || "").trim()))
-          .map(task => {
+          .map((task, index) => {
           const activeClaim = getCurrentClaimForTask(task.id);
           const ownedByCurrentUser = Boolean(
             activeClaim &&
@@ -715,6 +715,7 @@
           return {
             ...task,
             task_id: task.display_id,
+            gallery_number: index + 1,
             status: activeClaim ? claimStatusLabel(activeClaim.status) : "Available",
             active_claim_id: activeClaim?.id || null,
             active_claim_user_id: activeClaim?.user_id || null,
@@ -840,7 +841,7 @@
 
         panel.innerHTML = `
           <h2>Your active claim</h2>
-          <div class="list-title">#${escapeHtml(claim.task_id)} — ${escapeHtml(claim.paper_title)}</div>
+          <div class="list-title">#${escapeHtml(claim.gallery_number)} — ${escapeHtml(claim.paper_title)}</div>
           <div class="muted">Claimed ${formatDate(claim.active_claim_selected_at)}</div>
           <div class="muted">Expires ${formatDate(claim.active_claim_expires_at)}</div>
 
@@ -880,7 +881,7 @@
           <h2>Your submitted tasks</h2>
           ${submitted.slice(0, 10).map(task => `
             <div class="list-item">
-              <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+              <div class="list-title">#${escapeHtml(task.gallery_number)} — ${escapeHtml(task.paper_title)}</div>
               <div class="muted">Status: ${escapeHtml(task.status)}</div>
               <div class="muted">Submitted: ${formatDate(task.active_claim_submitted_at)}</div>
               <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
@@ -916,7 +917,7 @@
               <p>Approve if the example was used. Reopen if it should return to the available pool.</p>
               ${queue.map(task => `
                 <div class="list-item">
-                  <div class="list-title">#${escapeHtml(task.task_id)} — ${escapeHtml(task.paper_title)}</div>
+                  <div class="list-title">#${escapeHtml(task.gallery_number)} — ${escapeHtml(task.paper_title)}</div>
                   <div class="muted">Submitted by: ${escapeHtml(task.active_claim_email || "")}</div>
                   <div class="muted">Submitted at: ${formatDate(task.active_claim_submitted_at)}</div>
                   <div class="muted">Snorkel Submission ID: ${escapeHtml(task.active_claim_submission_id || "")}</div>
@@ -939,6 +940,7 @@
 
         const tasks = TASKS.filter(task => {
           const blob = [
+            task.gallery_number,
             task.task_id,
             task.domain,
             task.subdomain,
@@ -984,7 +986,7 @@
                 </div>
 
                 <h3 class="task-title">${escapeHtml(task.paper_title)}</h3>
-                <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || "")}</p>
+                <p class="task-id">#${escapeHtml(task.gallery_number)} · ${escapeHtml(task.venue_year || "")}</p>
 
                 <p class="preview">${escapeHtml(shorten(task.task_concept || "", 210))}</p>
 
@@ -1113,7 +1115,7 @@
             </div>
 
             <h2>${escapeHtml(task.paper_title)}</h2>
-            <p class="task-id">#${escapeHtml(task.task_id)} · ${escapeHtml(task.venue_year || "")}</p>
+            <p class="task-id">#${escapeHtml(task.gallery_number)} · ${escapeHtml(task.venue_year || "")}</p>
 
             <div class="eyebrow">
               <span class="pill ${escapeHtml(task.status)}">${escapeHtml(task.status)}</span>
